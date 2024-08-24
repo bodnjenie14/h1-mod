@@ -12,7 +12,7 @@
 #include "materials.hpp"
 #include "mods.hpp"
 #include "scheduler.hpp"
-#include "game/demonware/services.hpp"
+//#include "game/demonware/services.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/io.hpp>
@@ -113,7 +113,7 @@ namespace mods
 
 	void read_stats()
 	{
-		demonware::set_storage_path(mod_path.value_or(""));
+		//demonware::set_storage_path(mod_path.value_or(""));
 		utils::hook::invoke<void>(0x4E6B60_b, 0); // read stats
 	}
 
@@ -215,4 +215,4 @@ namespace mods
 	};
 }
 
-REGISTER_COMPONENT(mods::component)
+//REGISTER_COMPONENT(mods::component)
