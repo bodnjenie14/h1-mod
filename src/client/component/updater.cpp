@@ -34,6 +34,9 @@
 
 #define BINARY_NAME "h1-mod.exe"
 
+#define DISABLE_UPDATE_CHECK  // FU UPDATER
+
+
 namespace updater
 {
 	namespace
@@ -438,93 +441,96 @@ namespace updater
 
 		console::debug("[Updater] starting update check\n");
 
+#ifndef DISABLE_UPDATE_CHECK
 		scheduler::once([]()
-		{
-			const auto files_data = download_file_list();
-
-			if (is_update_cancelled())
 			{
-				reset_data();
-				return;
-			}
+				const auto files_data = download_file_list();
 
-			if (!files_data.has_value())
-			{
-				set_update_check_status(true, false, utils::string::va(ERR_UPDATE_CHECK_FAIL, "Unknown error"));
-				return;
-			}
-
-			const auto& value = files_data.value();
-			if (value.code != CURLE_OK)
-			{
-				const auto error = curl_error(value.code);
-				set_update_check_status(true, false, utils::string::va(ERR_UPDATE_CHECK_FAIL, error.data()));
-				return;
-			}
-
-			rapidjson::Document j;
-			j.Parse(value.buffer.data());
-
-			if (!j.IsArray())
-			{
-				set_update_check_status(true, false, ERR_UPDATE_CHECK_FAIL_BAD_RESPONSE);
-				return;
-			}
-
-			std::vector<std::string> required_files;
-			std::vector<std::string> update_files;
-
-			const auto files = j.GetArray();
-			for (const auto& file : files)
-			{
-				if (!file.IsArray() || file.Size() != 3 || !file[0].IsString() || !file[2].IsString())
+				if (is_update_cancelled())
 				{
-					continue;
+					reset_data();
+					return;
 				}
 
-				const auto name = file[0].GetString();
-				const auto sha = file[2].GetString();
-
-				update_files.push_back(name);
-
-				if (!check_file(name, sha))
+				if (!files_data.has_value())
 				{
-					if (get_binary_name() == name)
-					{
-						update_data.access([](update_data_t& data_)
-						{
-							data_.restart_required = true;
-						});
-					}
-
-					std::string name_ = name;
-					if (name_.ends_with(".ff"))
-					{
-						update_data.access([](update_data_t& data_)
-						{
-							data_.restart_required = true;
-						});
-					}
-
-					console::debug("[Updater] need file %s\n", name);
-
-					required_files.push_back(name);
+					set_update_check_status(true, false, utils::string::va(ERR_UPDATE_CHECK_FAIL, "Unknown error"));
+					return;
 				}
-			}
 
-			const auto garbage_files = find_garbage_files(update_files);
+				const auto& value = files_data.value();
+				if (value.code != CURLE_OK)
+				{
+					const auto error = curl_error(value.code);
+					set_update_check_status(true, false, utils::string::va(ERR_UPDATE_CHECK_FAIL, error.data()));
+					return;
+				}
 
-			update_data.access([&](update_data_t& data_)
-			{
-				data_.check.done = true;
-				data_.check.success = true;
-				data_.required_files = required_files;
-				data_.garbage_files = garbage_files;
-			});
+				rapidjson::Document j;
+				j.Parse(value.buffer.data());
 
-			notify("update_check_done");
-		}, scheduler::pipeline::async);
+				if (!j.IsArray())
+				{
+					set_update_check_status(true, false, ERR_UPDATE_CHECK_FAIL_BAD_RESPONSE);
+					return;
+				}
+
+				std::vector<std::string> required_files;
+				std::vector<std::string> update_files;
+
+				const auto files = j.GetArray();
+				for (const auto& file : files)
+				{
+					if (!file.IsArray() || file.Size() != 3 || !file[0].IsString() || !file[2].IsString())
+					{
+						continue;
+					}
+
+					const auto name = file[0].GetString();
+					const auto sha = file[2].GetString();
+
+					update_files.push_back(name);
+
+					if (!check_file(name, sha))
+					{
+						if (get_binary_name() == name)
+						{
+							update_data.access([](update_data_t& data_)
+								{
+									data_.restart_required = true;
+								});
+						}
+
+						std::string name_ = name;
+						if (name_.ends_with(".ff"))
+						{
+							update_data.access([](update_data_t& data_)
+								{
+									data_.restart_required = true;
+								});
+						}
+
+						console::debug("[Updater] need file %s\n", name);
+
+						required_files.push_back(name);
+					}
+				}
+
+				const auto garbage_files = find_garbage_files(update_files);
+
+				update_data.access([&](update_data_t& data_)
+					{
+						data_.check.done = true;
+						data_.check.success = true;
+						data_.required_files = required_files;
+						data_.garbage_files = garbage_files;
+					});
+
+				notify("update_check_done");
+			}, scheduler::pipeline::async);
+#endif
 	}
+
 
 	void start_update_download()
 	{
