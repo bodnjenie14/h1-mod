@@ -241,12 +241,12 @@ namespace demonware
 		{
 			if (library == "WS2_32.dll")
 			{
-				//if (function == "#3") return io::closesocket_stub;
+				if (function == "#3") return io::closesocket_stub;
 				if (function == "#4") return io::connect_stub;
-				//if (function == "#10") return io::ioctlsocket_stub;
-				//if (function == "#16") return io::recv_stub;
-				//if (function == "#18") return io::select_stub;
-				//if (function == "#19") return io::send_stub;
+				if (function == "#10") return io::ioctlsocket_stub;
+				if (function == "#16") return io::recv_stub;
+				if (function == "#18") return io::select_stub;
+				if (function == "#19") return io::send_stub;
 				if (function == "getaddrinfo") return io::getaddrinfo_stub;
 				if (function == "freeaddrinfo") return io::freeaddrinfo_stub;
 			}
